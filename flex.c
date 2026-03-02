@@ -290,3 +290,293 @@ int flex_sv_index_of(fstring_view sv, char x) {
 
     return -1;
 }
+
+static int flex_i32toa(int32_t N, char *restrict buf, size_t size) {
+    uint32_t num;
+    int is_negative = 0;
+
+    if (N < 0) {
+        is_negative = 1;
+        num = (uint32_t)(-(N + 1)) + 1;
+    } else {
+        num = (uint32_t)N;
+    }
+
+    uint32_t tmp = num;
+    int digits = 0;
+    do {
+        tmp /= 10;
+        digits++;
+    } while (tmp != 0);
+
+    int total = digits + is_negative;
+
+    if (size < (size_t)total || buf == NULL)
+        return total;
+
+    char *p = buf;
+
+    if (is_negative)
+        *p++ = '-';
+
+    for (int i = digits - 1; i >= 0; --i) {
+        p[i] = '0' + (num % 10);
+        num /= 10;
+    }
+
+    return total;
+}
+
+static int flex_i64toa(int64_t N, char *restrict buf, size_t size) {
+    uint64_t num;
+    int is_negative = 0;
+
+    if (N < 0) {
+        is_negative = 1;
+        num = (uint64_t)(-(N + 1)) + 1;
+    } else {
+        num = (uint64_t)N;
+    }
+
+    uint64_t tmp = num;
+    int digits = 0;
+    do {
+        tmp /= 10;
+        digits++;
+    } while (tmp != 0);
+
+    int total = digits + is_negative;
+
+    if (size < (size_t)total || buf == NULL)
+        return total;
+
+    char *p = buf;
+
+    if (is_negative)
+        *p++ = '-';
+
+    for (int i = digits - 1; i >= 0; --i) {
+        p[i] = '0' + (num % 10);
+        num /= 10;
+    }
+
+    return total;
+}
+
+static int flex_u32toa(uint32_t N, char *restrict buf, size_t size) {
+    uint32_t num = N;
+
+    uint32_t tmp = num;
+    int digits = 0;
+    do {
+        tmp /= 10;
+        digits++;
+    } while (tmp != 0);
+
+    if (size < (size_t)digits || buf == NULL)
+        return digits;
+
+    for (int i = digits - 1; i >= 0; --i) {
+        buf[i] = '0' + (num % 10);
+        num /= 10;
+    }
+
+    return digits;
+}
+
+static int flex_u64toa(uint64_t N, char *restrict buf, size_t size) {
+    uint64_t num = N;
+
+    uint64_t tmp = num;
+    int digits = 0;
+    do {
+        tmp /= 10;
+        digits++;
+    } while (tmp != 0);
+
+    if (size < (size_t)digits || buf == NULL)
+        return digits;
+
+    for (int i = digits - 1; i >= 0; --i) {
+        buf[i] = '0' + (num % 10);
+        num /= 10;
+    }
+
+    return digits;
+}
+
+static int flex_buf_reserve(uint8_t **data, size_t *capacity, size_t size) {
+    if (!data || !capacity)
+        return FLEX_EINVAL;
+
+    if (*capacity < size) {
+        if (*capacity == 0)
+            *capacity = FLEX_SB_INIT_CAPACITY;
+
+        size_t new_capacity = *capacity;
+        while (new_capacity < size)
+            new_capacity *= FLEX_SB_GROWTH_FACTOR;
+
+        void *new_data = realloc(*data, new_capacity);
+        if (!new_data)
+            return FLEX_ENOSPC;
+
+        *data = new_data;
+        *capacity = new_capacity;
+    }
+
+    return FLEX_EOK;
+}
+
+static int flex_buf_vappendf(
+    uint8_t **data, size_t *len, size_t *capacity,
+    const char *restrict fmt, va_list args
+) {
+    va_list args_temp;
+    va_copy(args_temp, args);
+
+    int n = vsnprintf(NULL, 0, fmt, args_temp);
+    va_end(args_temp);
+
+    if (n < 0)
+        return FLEX_EINVAL;
+
+    if ((size_t)n > SIZE_MAX - *len - 1)
+        return FLEX_E2BIG;
+
+    size_t needed = n + *len + 1;
+    if (needed > *capacity) {
+        int retval = flex_buf_reserve(data,capacity, needed);
+        if (retval != FLEX_EOK)
+            return retval;
+    }
+
+    n = vsnprintf((char*)((*data) + *len), n + 1, fmt, args);
+    if (n < 0)
+        return FLEX_EINVAL;
+
+    *len += n;
+    return FLEX_EOK;
+}
+
+static int flex_buf_append_chr(uint8_t **data, size_t *len, size_t *capacity, char ch) {
+    int retval = flex_buf_reserve(data, capacity, *len + 1);
+    if (retval == FLEX_EOK)
+        (*data)[(*len)++] = ch;
+
+    return retval;
+}
+
+static int flex_buf_append_buf(uint8_t **data, size_t *len, size_t *capacity, const char *src_buf, size_t src_len) {
+    if (src_len == 0)
+        return FLEX_EOK;
+
+    if (!data)
+        return FLEX_EINVAL;
+
+    int retval = flex_buf_reserve(data, capacity, *len + src_len);
+    if (retval != FLEX_EOK)
+        return retval;
+
+    memcpy((*data) + *len, src_buf, src_len);
+    *len += src_len;
+
+    return retval;
+}
+
+static int flex_buf_append_i32(uint8_t **data, size_t *len, size_t *capacity, int32_t N) {
+    enum { I32_BUF_MIN_SIZE = 11 }; // MAX int32_t (10) -> 10 + (minus sign) = 11
+    char nbuf[I32_BUF_MIN_SIZE] = { 0 };
+    int n = flex_i32toa(N, nbuf, sizeof(nbuf));
+    if (n > 0)
+        return flex_buf_append_buf(data, len, capacity, nbuf, n);
+
+    return FLEX_EOK;
+}
+
+static int flex_buf_append_i64(uint8_t **data, size_t *len, size_t *capacity, int64_t N) {
+    enum { I64_BUF_MIN_SIZE = 21 }; // MAX int64_t (20) + (minus sign) = 21
+    char nbuf[I64_BUF_MIN_SIZE] = { 0 };
+    int n = flex_i64toa(N, nbuf, sizeof(nbuf));
+    if (n > 0)
+        return flex_buf_append_buf(data, len, capacity, nbuf, n);
+
+    return FLEX_EOK;
+}
+
+static int flex_buf_append_u32(uint8_t **data, size_t *len, size_t *capacity, uint32_t N) {
+    enum { U32_BUF_MIN_SIZE = 10 }; // MAX int64_t (10) = 10
+    char nbuf[U32_BUF_MIN_SIZE] = { 0 };
+    int n = flex_u32toa(N, nbuf, sizeof(nbuf));
+    if (n > 0)
+        return flex_buf_append_buf(data, len, capacity, nbuf, n);
+
+    return FLEX_EOK;
+}
+
+static int flex_buf_append_u64(uint8_t **data, size_t *len, size_t *capacity, uint64_t N) {
+    enum { U64_BUF_MIN_SIZE = 20 }; // MAX int64_t (20) = 20
+    char nbuf[U64_BUF_MIN_SIZE] = { 0 };
+    int n = flex_u64toa(N, nbuf, sizeof(nbuf));
+    if (n > 0)
+        return flex_buf_append_buf(data, len, capacity, nbuf, n);
+
+    return FLEX_EOK;
+}
+
+static int flex_buf_append_f32(uint8_t **data, size_t *len, size_t *capacity, float N) {
+    enum {
+        F32_PRECISION = 7,
+        // sign + dot + e+-00 (4) + digits (7)
+        F32_BUF_MIN_SIZE = 6 + F32_PRECISION
+    };
+
+    char nbuf[F32_BUF_MIN_SIZE] = { 0 };
+    int n = snprintf(nbuf, sizeof(nbuf), "%.*g", F32_PRECISION, N);
+    if (n > 0)
+        return flex_buf_append_buf(data, len, capacity, nbuf, n);
+    else if (n < 0)
+        return FLEX_EINVAL;
+
+    return FLEX_EOK;
+}
+
+static int flex_buf_append_f64(uint8_t **data, size_t *len, size_t *capacity, double N) {
+    enum {
+        F64_PRECISION = 15,
+        // sign + dot + e(+-)000 (5) + digits (15)
+        F64_BUF_MIN_SIZE = 7 + F64_PRECISION
+    };
+
+    char nbuf[F64_BUF_MIN_SIZE] = { 0 };
+    int n = snprintf(nbuf, sizeof(nbuf), "%.*g", F64_PRECISION, N);
+    if (n > 0)
+        return flex_buf_append_buf(data, len, capacity, nbuf, n);
+    else if (n < 0)
+        return FLEX_EINVAL;
+
+    return FLEX_EOK;
+}
+
+static int flex_buf_append_cstr(uint8_t **data, size_t *len, size_t *capacity, const char *restrict cstr) {
+    size_t n = strlen(cstr);
+    if (n > 0)
+        return flex_buf_append_buf(data, len, capacity, cstr, n);
+
+    return FLEX_EOK;
+}
+
+static fstring flex_buf_to_str(uint8_t *buf, size_t size) {
+    fstring fstr = { 0 };
+    if (size > 0) {
+        uint8_t *data = malloc(size);
+        if (!data)
+            return fstr;
+
+        memcpy(data, buf, size);
+        fstr.data = data;
+        fstr.len = size;
+    }
+
+    return fstr;
+}

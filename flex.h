@@ -8,7 +8,18 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+#define FLEX_SB_INIT_CAPACITY 64
+
+#define FLEX_SB_GROWTH_FACTOR 2
+
 #define FLEX_STR_FMT(str) (int)(str).len, (str).data
+
+enum {
+    FLEX_EOK = 0,
+    FLEX_E2BIG,
+    FLEX_EINVAL,
+    FLEX_ENOSPC,
+};
 
 typedef struct {
     const uint8_t *data;
