@@ -84,6 +84,8 @@ int flex_sb_append_cstr(fstring_builder *sb, const char*);
 #define flex_sb_appendfs(sb, fs) flex_sb_append_buf((sb), (const char*)fs.data, fs.len)
 #define flex_sb_append_null(sb) flex_sb_append_chr((sb), '\0')
 #define flex_sb_append_lit(sb, lit) flex_sb_append_buf((sb), lit, sizeof(lit) - 1)
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define flex_sb_append(sb, x) _Generic((x), \
     char: flex_sb_append_chr, \
     char*: flex_sb_append_cstr, \
@@ -95,6 +97,9 @@ int flex_sb_append_cstr(fstring_builder *sb, const char*);
     float: flex_sb_append_f32, \
     double: flex_sb_append_f64)((sb), x)
 
+#else 
+#define flex_sb_append(sb, x) flex_sb_append_cstr((sb), x)
+#endif
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #include <pthread.h>
