@@ -61,6 +61,41 @@ bool flex_sv_equali(fstring_view lhs, fstring_view rhs);
 int flex_sv_index_of(fstring_view sv, char x);
 
 
+typedef struct {
+    uint8_t *data;
+    size_t len;
+    size_t capacity;
+} fstring_builder;
+
+fstring_builder flex_sb_new(size_t capacity);
+void flex_sb_free(fstring_builder *sb);
+fstring flex_sb_to_str(fstring_builder sb);
+int flex_sb_reserve(fstring_builder *sb, size_t size);
+int flex_sb_appendf(fstring_builder *sb, const char *fmt, ...);
+int flex_sb_append_chr(fstring_builder *sb, char);
+int flex_sb_append_buf(fstring_builder *sb, const char *buf, size_t len);
+int flex_sb_append_i32(fstring_builder *sb, int32_t);
+int flex_sb_append_i64(fstring_builder *sb, int64_t);
+int flex_sb_append_u32(fstring_builder *sb, uint32_t);
+int flex_sb_append_u64(fstring_builder *sb, uint64_t);
+int flex_sb_append_f32(fstring_builder *sb, float);
+int flex_sb_append_f64(fstring_builder *sb, double);
+int flex_sb_append_cstr(fstring_builder *sb, const char*);
+#define flex_sb_appendfs(sb, fs) flex_sb_append_buf((sb), (const char*)fs.data, fs.len)
+#define flex_sb_append_null(sb) flex_sb_append_chr((sb), '\0')
+#define flex_sb_append_lit(sb, lit) flex_sb_append_buf((sb), lit, sizeof(lit) - 1)
+#define flex_sb_append(sb, x) _Generic((x), \
+    char: flex_sb_append_chr, \
+    char*: flex_sb_append_cstr, \
+    const char*: flex_sb_append_cstr, \
+    int: flex_sb_append_i32, \
+    int64_t: flex_sb_append_i64, \
+    uint32_t: flex_sb_append_u32, \
+    uint64_t: flex_sb_append_u64, \
+    float: flex_sb_append_f32, \
+    double: flex_sb_append_f64)((sb), x)
+
+
 #ifdef __cplusplus
 }
 #endif

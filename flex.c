@@ -580,3 +580,73 @@ static fstring flex_buf_to_str(uint8_t *buf, size_t size) {
 
     return fstr;
 }
+
+fstring_builder flex_sb_new(size_t capacity) {
+    fstring_builder sb = { 0 };
+    if (capacity > 0) {
+        sb.data = malloc(capacity);
+        sb.capacity = capacity;
+    }
+
+    return sb;
+}
+
+void flex_sb_free(fstring_builder *sb) {
+    free(sb->data);
+    sb->data = NULL;
+    sb->len = 0;
+    sb->capacity = 0;
+}
+
+fstring flex_sb_to_str(fstring_builder sb) {
+    return flex_buf_to_str(sb.data, sb.len);
+}
+
+int flex_sb_reserve(fstring_builder *sb, size_t size) {
+    return flex_buf_reserve(&sb->data, &sb->capacity, size);
+}
+
+int flex_sb_appendf(fstring_builder *sb, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    int retval = flex_buf_vappendf(&sb->data, &sb->len, &sb->capacity, fmt, args);
+    va_end(args);
+
+    return retval;
+}
+
+int flex_sb_append_chr(fstring_builder *sb, char ch) {
+    return flex_buf_append_chr(&sb->data, &sb->len, &sb->capacity, ch);
+}
+
+int flex_sb_append_buf(fstring_builder *sb, const char *buf, size_t len) {
+    return flex_buf_append_buf(&sb->data, &sb->len, &sb->capacity, buf, len);
+}
+
+int flex_sb_append_i32(fstring_builder *sb, int32_t N) {
+    return flex_buf_append_i32(&sb->data, &sb->len, &sb->capacity, N);
+}
+
+int flex_sb_append_i64(fstring_builder *sb, int64_t N) {
+    return flex_buf_append_i64(&sb->data, &sb->len, &sb->capacity, N);
+}
+
+int flex_sb_append_u32(fstring_builder *sb, uint32_t N) {
+    return flex_buf_append_u32(&sb->data, &sb->len, &sb->capacity, N);
+}
+
+int flex_sb_append_u64(fstring_builder *sb, uint64_t N) {
+    return flex_buf_append_u64(&sb->data, &sb->len, &sb->capacity, N);
+}
+
+int flex_sb_append_f32(fstring_builder *sb, float N) {
+    return flex_buf_append_f32(&sb->data, &sb->len, &sb->capacity, N);
+}
+
+int flex_sb_append_f64(fstring_builder *sb, double N) {
+    return flex_buf_append_f64(&sb->data, &sb->len, &sb->capacity, N);
+}
+
+int flex_sb_append_cstr(fstring_builder *sb, const char *cstr) {
+    return flex_buf_append_cstr(&sb->data, &sb->len, &sb->capacity, cstr);
+}
