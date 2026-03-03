@@ -96,6 +96,74 @@ int flex_sb_append_cstr(fstring_builder *sb, const char*);
     double: flex_sb_append_f64)((sb), x)
 
 
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#include <pthread.h>
+
+typedef struct {
+    uint8_t *data;
+    size_t len;
+    size_t capacity;
+    pthread_mutex_t lock;
+} fstring_buffer;
+
+fstring_buffer flex_sbuf_new(size_t capacity);
+void flex_sbuf_free(fstring_buffer *sbuf);
+fstring flex_sbuf_to_str(fstring_buffer sbuf);
+int flex_sbuf_reserve(fstring_buffer *sbuf, size_t size);
+int flex_sbuf_appendf(fstring_buffer *sbuf, const char *fmt, ...);
+int flex_sbuf_append_chr(fstring_buffer *sbuf, char);
+int flex_sbuf_append_buf(fstring_buffer *sbuf, const char *buf, size_t len);
+int flex_sbuf_append_i32(fstring_buffer *sbuf, int32_t);
+int flex_sbuf_append_i64(fstring_buffer *sbuf, int64_t);
+int flex_sbuf_append_u32(fstring_buffer *sbuf, uint32_t);
+int flex_sbuf_append_u64(fstring_buffer *sbuf, uint64_t);
+int flex_sbuf_append_f32(fstring_buffer *sbuf, float);
+int flex_sbuf_append_f64(fstring_buffer *sbuf, double);
+int flex_sbuf_append_cstr(fstring_buffer *sbuf, const char*);
+#define flex_sbuf_appendfs(sbuf, fs) flex_sbuf_append_buf((sbuf), (const char*)fs.data, fs.len)
+#define flex_sbuf_append_null(sbuf) flex_sbuf_append_chr((sbuf), '\0')
+#define flex_sbuf_append_lit(sbuf, lit) flex_sbuf_append_buf((sbuf), lit, sizeof(lit) - 1)
+#define flex_sbuf_append(sbuf, x) _Generic((x), \
+    char: flex_sbuf_append_chr, \
+    char*: flex_sbuf_append_cstr, \
+    const char*: flex_sbuf_append_cstr, \
+    int: flex_sbuf_append_i32, \
+    int64_t: flex_sbuf_append_i64, \
+    uint32_t: flex_sbuf_append_u32, \
+    uint64_t: flex_sbuf_append_u64, \
+    float: flex_sbuf_append_f32, \
+    double: flex_sbuf_append_f64)((sbuf), x)
+
+
+#define flex_sbuf_lock(sbuf) pthread_mutex_lock(&(sbuf)->lock)
+int flex_sbuf_reserve_locked(fstring_buffer *sbuf, size_t size);
+int flex_sbuf_appendf_locked(fstring_buffer *sbuf, const char *fmt, ...);
+int flex_sbuf_append_chr_locked(fstring_buffer *sbuf, char);
+int flex_sbuf_append_buf_locked(fstring_buffer *sbuf, const char *buf, size_t len);
+int flex_sbuf_append_i32_locked(fstring_buffer *sbuf, int32_t);
+int flex_sbuf_append_i64_locked(fstring_buffer *sbuf, int64_t);
+int flex_sbuf_append_u32_locked(fstring_buffer *sbuf, uint32_t);
+int flex_sbuf_append_u64_locked(fstring_buffer *sbuf, uint64_t);
+int flex_sbuf_append_f32_locked(fstring_buffer *sbuf, float);
+int flex_sbuf_append_f64_locked(fstring_buffer *sbuf, double);
+int flex_sbuf_append_cstr_locked(fstring_buffer *sbuf, const char*);
+#define flex_sbuf_appendfs_locked(sbuf, fs) flex_sbuf_append_buf_locked((sbuf), (const char*)fs.data, fs.len)
+#define flex_sbuf_append_null_locked(sbuf) flex_sbuf_append_chr_locked((sbuf), '\0')
+#define flex_sbuf_append_lit_locked(sbuf, lit) flex_sbuf_append_buf_locked((sbuf), lit, sizeof(lit) - 1)
+#define flex_sbuf_append_locked(sbuf, x) _Generic((x), \
+    char: flex_sbuf_append_chr_locked, \
+    char*: flex_sbuf_append_cstr_locked, \
+    const char*: flex_sbuf_append_cstr_locked, \
+    int: flex_sbuf_append_i32_locked, \
+    int64_t: flex_sbuf_append_i64_locked, \
+    uint32_t: flex_sbuf_append_u32_locked, \
+    uint64_t: flex_sbuf_append_u64_locked, \
+    float: flex_sbuf_append_f32_locked, \
+    double: flex_sbuf_append_f64_locked)((sbuf), x)
+#define flex_sbuf_unlock(sbuf) pthread_mutex_unlock(&(sbuf)->lock)
+#endif // C11 or GREATER
+
+
 #ifdef __cplusplus
 }
 #endif

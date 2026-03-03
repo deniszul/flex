@@ -650,3 +650,170 @@ int flex_sb_append_f64(fstring_builder *sb, double N) {
 int flex_sb_append_cstr(fstring_builder *sb, const char *cstr) {
     return flex_buf_append_cstr(&sb->data, &sb->len, &sb->capacity, cstr);
 }
+
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+fstring_buffer flex_sbuf_new(size_t capacity) {
+    fstring_buffer sbuf = { 0 };
+    pthread_mutex_init(&sbuf.lock, NULL);
+    if (capacity > 0) {
+        sbuf.data = malloc(capacity);
+        sbuf.capacity = capacity;
+    }
+
+    return sbuf;
+}
+
+void flex_sbuf_free(fstring_buffer *sbuf) {
+    free(sbuf->data);
+    sbuf->data = NULL;
+    sbuf->len = 0;
+    sbuf->capacity = 0;
+    pthread_mutex_destroy(&sbuf->lock);
+}
+
+int flex_sbuf_reserve(fstring_buffer *sbuf, size_t size) {
+    int retval = FLEX_EOK;
+    if (size > sbuf->capacity) {
+        pthread_mutex_lock(&sbuf->lock);
+        retval = flex_buf_reserve(&sbuf->data, &sbuf->capacity, size);
+        pthread_mutex_unlock(&sbuf->lock);
+    }
+
+    return retval;
+}
+
+fstring flex_sbuf_to_str(fstring_buffer sb) {
+    return flex_buf_to_str(sb.data, sb.len);
+}
+
+int flex_sbuf_appendf(fstring_buffer *sbuf, const char *restrict fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    pthread_mutex_lock(&sbuf->lock);
+    int retval = flex_buf_vappendf(&sbuf->data, &sbuf->len, &sbuf->capacity, fmt, args);
+    pthread_mutex_unlock(&sbuf->lock);
+    va_end(args);
+
+    return retval;
+}
+
+int flex_sbuf_append_chr(fstring_buffer *sbuf, char ch) {
+    pthread_mutex_lock(&sbuf->lock);
+    int retval = flex_buf_append_chr(&sbuf->data, &sbuf->len, &sbuf->capacity, ch);
+    pthread_mutex_unlock(&sbuf->lock);
+    return retval;
+}
+
+int flex_sbuf_append_buf(fstring_buffer *sbuf, const char *restrict buf, size_t len) {
+    pthread_mutex_lock(&sbuf->lock);
+    int retval = flex_buf_append_buf(&sbuf->data, &sbuf->len, &sbuf->capacity, buf, len);
+    pthread_mutex_unlock(&sbuf->lock);
+    return retval;
+}
+
+int flex_sbuf_append_i32(fstring_buffer *sbuf, int32_t N) {
+    pthread_mutex_lock(&sbuf->lock);
+    int retval = flex_buf_append_i32(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+    pthread_mutex_unlock(&sbuf->lock);
+
+    return retval;
+}
+
+int flex_sbuf_append_i64(fstring_buffer *sbuf, int64_t N) {
+    pthread_mutex_lock(&sbuf->lock);
+    int retval = flex_buf_append_i64(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+    pthread_mutex_unlock(&sbuf->lock);
+
+    return retval;
+}
+
+int flex_sbuf_append_u32(fstring_buffer *sbuf, uint32_t N) {
+    pthread_mutex_lock(&sbuf->lock);
+    int retval = flex_buf_append_u32(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+    pthread_mutex_unlock(&sbuf->lock);
+
+    return retval;
+}
+
+int flex_sbuf_append_u64(fstring_buffer *sbuf, uint64_t N) {
+    pthread_mutex_lock(&sbuf->lock);
+    int retval = flex_buf_append_u64(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+    pthread_mutex_unlock(&sbuf->lock);
+
+    return retval;
+}
+
+int flex_sbuf_append_f32(fstring_buffer *sbuf, float N) {
+    pthread_mutex_lock(&sbuf->lock);
+    int retval = flex_buf_append_f32(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+    pthread_mutex_unlock(&sbuf->lock);
+
+    return retval;
+}
+
+int flex_sbuf_append_f64(fstring_buffer *sbuf, double N) {
+    pthread_mutex_lock(&sbuf->lock);
+    int retval = flex_buf_append_f64(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+    pthread_mutex_unlock(&sbuf->lock);
+
+    return retval;
+}
+
+int flex_sbuf_append_cstr(fstring_buffer *sbuf, const char *restrict cstr) {
+    pthread_mutex_lock(&sbuf->lock);
+    int retval = flex_buf_append_cstr(&sbuf->data, &sbuf->len, &sbuf->capacity, cstr);
+    pthread_mutex_unlock(&sbuf->lock);
+
+    return retval;
+}
+
+int flex_sbuf_reserve_locked(fstring_buffer *sbuf, size_t size) {
+    return flex_buf_reserve(&sbuf->data, &sbuf->capacity, size);
+}
+
+int flex_sbuf_appendf_locked(fstring_buffer *sbuf, const char *restrict fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    int retval = flex_buf_vappendf(&sbuf->data, &sbuf->len, &sbuf->capacity, fmt, args);
+    va_end(args);
+
+    return retval;
+}
+
+int flex_sbuf_append_chr_locked(fstring_buffer *sbuf, char ch) {
+    return flex_buf_append_chr(&sbuf->data, &sbuf->len, &sbuf->capacity, ch);
+}
+
+int flex_sbuf_append_buf_locked(fstring_buffer *sbuf, const char *restrict buf, size_t len) {
+    return flex_buf_append_buf(&sbuf->data, &sbuf->len, &sbuf->capacity, buf, len);
+}
+
+int flex_sbuf_append_i32_locked(fstring_buffer *sbuf, int32_t N) {
+    return flex_buf_append_i32(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+}
+
+int flex_sbuf_append_i64_locked(fstring_buffer *sbuf, int64_t N) {
+    return flex_buf_append_i64(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+}
+
+int flex_sbuf_append_u32_locked(fstring_buffer *sbuf, uint32_t N) {
+    return flex_buf_append_u32(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+}
+
+int flex_sbuf_append_u64_locked(fstring_buffer *sbuf, uint64_t N) {
+    return flex_buf_append_u64(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+}
+
+int flex_sbuf_append_f32_locked(fstring_buffer *sbuf, float N) {
+    return flex_buf_append_f32(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+}
+
+int flex_sbuf_append_f64_locked(fstring_buffer *sbuf, double N) {
+    return flex_buf_append_f64(&sbuf->data, &sbuf->len, &sbuf->capacity, N);
+}
+
+int flex_sbuf_append_cstr_locked(fstring_buffer *sbuf, const char *restrict cstr) {
+    return flex_buf_append_cstr(&sbuf->data, &sbuf->len, &sbuf->capacity, cstr);
+}
+#endif // C11 or GREATER
