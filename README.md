@@ -118,24 +118,24 @@ flex_str_free(&s);
 ---
 
 ### Using String Views
-#### Literal:
+Literal:
 ```c
 fstring_view sv = FLEX_SV_LIT("hello");
 ```
 
-#### Slice:
+Slice:
 ```c
 fstring_view sub = flex_sv_slice(sv, 1, 4);
 
 ```
 
-#### Trim:
+Trim:
 ```c
 fstring_view trimmed = flex_sv_trim(sv);
 
 ```
 
-#### Compare:
+Compare:
 ```c
 flex_sv_equal(a, b);
 flex_sv_equali(a, b); // insensitive-case
