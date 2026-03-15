@@ -22,12 +22,29 @@ Designed to be explicit, predictable, and safe from classic char* pitfalls.
 ---
 
 ## Installation
-Simply copy [`flex.h`](./flex.h) and [`flex.c`](./flex.c) into your project.
-Compile with:
+You have two ways to use flex.
+
+1. Header-only (recommended)
+Copy (`flex.h`)[./flex.h] into your project and define the implementation in one source file:
+```c
+#define FLEX_STRING_IMPLEMENTATION
+#include "flex.h"
+```
+Then compile normally.
+
+If you want thread-safe support (`fstring_buffer`), compile with:
 ```
 -std=c11 -pthread
 ```
-If you want thread-safe support (`fstring_buffer`).
+
+2. Traditional library
+Copy both (`flex.h`)[./flex.h] and (`flex.c`)[./flex.c] into your project and compile them together:
+```
+cc -std=c11 -pthread your_program.c flex.c
+
+```
+The `-pthread` flag is only required if you use the thread-safe API (`fstring_buffer`).
+
 
 ---
 
