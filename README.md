@@ -25,7 +25,7 @@ Designed to be explicit, predictable, and safe from classic char* pitfalls.
 You have two ways to use flex.
 
 ### 1. Header-only (recommended)
-Copy (`flex.h`)[./flex.h] into your project and define the implementation in one source file:
+Copy [`flex.h`](./flex.h) into your project and define the implementation in one source file:
 ```c
 #define FLEX_STRING_IMPLEMENTATION
 #include "flex.h"
